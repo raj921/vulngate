@@ -3,10 +3,11 @@ package scan
 
 import (
 	"bytes"
+	"cmp"
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -19,8 +20,8 @@ var (
 	// IncludeTests, when true, disables tests/examples path scoping.
 	IncludeTests bool
 	// SkippedVendor / SkippedTests count files excluded from scanning.
-	SkippedVendor int64
-	SkippedTests  int64
+	SkippedVendor atomic.Int64
+	SkippedTests  atomic.Int64
 )
 
 var testPathSegs = map[string]bool{
@@ -106,7 +107,7 @@ func Scan(root string) ([]Finding, error) {
 	jobs := make(chan string)
 	found := make(chan []Finding, len(paths))
 	var wg sync.WaitGroup
-	for w := 0; w < runtime.NumCPU(); w++ {
+	for range runtime.NumCPU() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -133,15 +134,12 @@ func Scan(root string) ([]Finding, error) {
 // SortFindings orders HIGH→LOW, then path, then line.
 func SortFindings(all []Finding) {
 	sevRank := map[string]int{rules.High: 0, rules.Medium: 1, rules.Low: 2}
-	sort.Slice(all, func(i, j int) bool {
-		a, b := all[i], all[j]
-		if sevRank[a.Severity] != sevRank[b.Severity] {
-			return sevRank[a.Severity] < sevRank[b.Severity]
-		}
-		if a.Path != b.Path {
-			return a.Path < b.Path
-		}
-		return a.Line < b.Line
+	slices.SortFunc(all, func(a, b Finding) int {
+		return cmp.Or(
+			cmp.Compare(sevRank[a.Severity], sevRank[b.Severity]),
+			cmp.Compare(a.Path, b.Path),
+			cmp.Compare(a.Line, b.Line),
+		)
 	})
 }
 
@@ -178,11 +176,11 @@ func collect(root string) ([]string, error) {
 // ScanFile applies regex rules and (for Python) AST taint analysis.
 func ScanFile(path string) []Finding {
 	if isVendorPath(path) {
-		atomic.AddInt64(&SkippedVendor, 1)
+		SkippedVendor.Add(1)
 		return nil
 	}
 	if isTestLike(path) {
-		atomic.AddInt64(&SkippedTests, 1)
+		SkippedTests.Add(1)
 		return nil
 	}
 	data, err := os.ReadFile(path)
@@ -191,7 +189,7 @@ func ScanFile(path string) []Finding {
 	}
 	ext := filepath.Ext(path)
 	if (ext == ".js" || ext == ".ts" || ext == ".jsx" || ext == ".tsx") && isMinifiedJS(data) {
-		atomic.AddInt64(&SkippedVendor, 1)
+		SkippedVendor.Add(1)
 		return nil
 	}
 	f := &fileRef{path: path}

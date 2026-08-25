@@ -93,5 +93,6 @@ echo $?                                 # 1 when HIGH findings exist
 ## 7. Status
 
 v0.3 — AST taint tier, diff mode, SARIF, benchmark harness, precision hardening shipped.
+Changelog (including the modern-Go guidelines pass): [CHANGELOG.md](CHANGELOG.md).
 Demo: `demo/` contains intentionally vulnerable Python/JS; VulnGate blocks it
 (13 findings, 9 HIGH). Benchmarks and known-FP analysis: `bench/BENCH.md`.

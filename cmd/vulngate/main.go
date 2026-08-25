@@ -80,9 +80,9 @@ func main() {
 		os.Exit(2)
 	}
 	scan.SortFindings(findings)
-	if n := scan.SkippedVendor + scan.SkippedTests; n > 0 {
-		fmt.Fprintf(os.Stderr, "vulngate: skipped %d file(s): %d vendor/minified, %d tests/examples\n",
-			n, scan.SkippedVendor, scan.SkippedTests)
+	v, t := scan.SkippedVendor.Load(), scan.SkippedTests.Load()
+	if n := v + t; n > 0 {
+		fmt.Fprintf(os.Stderr, "vulngate: skipped %d file(s): %d vendor/minified, %d tests/examples\n", n, v, t)
 	}
 
 	switch *format {

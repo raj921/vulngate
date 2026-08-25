@@ -214,7 +214,7 @@ func containsTainted(n *ts.Node, src []byte, tainted map[string]bool) bool {
 
 func walk(n *ts.Node, fn func(*ts.Node)) {
 	fn(n)
-	for i := uint(0); i < n.ChildCount(); i++ {
+	for i := range n.ChildCount() {
 		if c := n.Child(i); c != nil {
 			walk(c, fn)
 		}

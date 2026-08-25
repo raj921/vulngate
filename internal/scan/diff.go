@@ -29,7 +29,8 @@ func ParseUnifiedDiff(r io.Reader) (map[string][]NumberedLine, error) {
 		line := sc.Text()
 		switch {
 		case strings.HasPrefix(line, "+++ "):
-			file = strings.TrimPrefix(strings.TrimPrefix(line, "+++ "), "b/")
+			rest, _ := strings.CutPrefix(line, "+++ ")
+			file, _ = strings.CutPrefix(rest, "b/")
 		case strings.HasPrefix(line, "@@ "):
 			l, err := hunkStart(line)
 			if err != nil {
@@ -50,15 +51,16 @@ func ParseUnifiedDiff(r io.Reader) (map[string][]NumberedLine, error) {
 
 // hunkStart parses "@@ -a,b +c,d @@" and returns c (first line of new hunk).
 func hunkStart(header string) (int, error) {
-	i := strings.Index(header, "+")
-	if i < 0 {
+	_, rest, ok := strings.Cut(header, "+")
+	if !ok {
 		return 0, fmt.Errorf("bad hunk header: %q", header)
 	}
-	j := strings.IndexAny(header[i:], ", @")
-	if j < 0 {
+	num, _, _ := strings.Cut(rest, ",")
+	num, _, _ = strings.Cut(num, " ")
+	if num == "" {
 		return 0, fmt.Errorf("bad hunk header: %q", header)
 	}
-	return strconv.Atoi(header[i+1 : i+j])
+	return strconv.Atoi(num)
 }
 
 // ScanNumberedLines applies the regex tier to explicit lines (diff mode).
