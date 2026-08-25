@@ -1,0 +1,8 @@
+--- a/app.py
++++ b/app.py
+@@ -10,2 +10,4 @@
+ def get_user():
+-    return "ok"
++    uid = request.args.get("id")
++    row = db.execute(f"SELECT * FROM users WHERE id = {uid}")
++    return str(row)

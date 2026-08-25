@@ -1,0 +1,7 @@
+/vulngate
+bench/repos/
+bench/vg_pred.json
+bench/vg_*.json
+bench/llm_pred*.json
+report.json
+.DS_Store

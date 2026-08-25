@@ -1,0 +1,9 @@
+{
+  "flask_taint.py": ["CWE-918", "CWE-78", "CWE-89"],
+  "flask_eval_pickle.py": ["CWE-94", "CWE-502"],
+  "flask_secrets_debug.py": ["CWE-798", "CWE-489"],
+  "py_crypto_jwt.py": ["CWE-327", "CWE-347"],
+  "js_exec_xss_jwt.js": ["CWE-78", "CWE-79", "CWE-347"],
+  "py_traps_clean.py": [],
+  "js_traps_clean.js": []
+}
