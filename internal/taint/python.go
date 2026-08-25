@@ -11,8 +11,6 @@ import (
 
 	ts "github.com/tree-sitter/go-tree-sitter"
 	tspython "github.com/tree-sitter/tree-sitter-python/bindings/go"
-
-	"github.com/raj921/vulngate/internal/rules"
 )
 
 // Result is one AST-confirmed finding.
@@ -85,7 +83,6 @@ func AnalyzePython(src []byte) []Result {
 	lines := strings.Split(string(src), "\n")
 
 	// --- collect assignments, propagate taint to fixpoint
-	type assign struct{ name string }
 	tainted := map[string]bool{}
 	var assignments []*ts.Node
 	walk(root, func(n *ts.Node) {
@@ -220,6 +217,3 @@ func walk(n *ts.Node, fn func(*ts.Node)) {
 		}
 	}
 }
-
-// SeverityOf returns the severity for a taint rule id (all HIGH for now).
-func SeverityOf(id string) string { return rules.High }

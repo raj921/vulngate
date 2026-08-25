@@ -99,7 +99,7 @@ func SARIF(findings []scan.Finding) ([]byte, error) {
 
 	driver := &log.Runs[0].Tool.Driver
 	driver.Name = "VulnGate"
-	driver.Version = "0.2.0"
+	driver.Version = Version
 	driver.InformationURI = "https://github.com/raj921/vulngate"
 
 	seen := map[string]bool{}

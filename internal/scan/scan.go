@@ -197,22 +197,26 @@ func ScanFile(path string) []Finding {
 	for i, l := range strings.Split(string(data), "\n") {
 		lines = append(lines, NumberedLine{No: i + 1, Text: l})
 	}
-	findings := f.scanLines(lines)
+	findings := f.scanLines(lines, ext == ".py")
 
 	if filepath.Ext(path) == ".py" {
 		var ast []Finding
-		var astLines = map[int]bool{}
+		astCWEs := map[int]map[string]bool{}
 		for _, r := range taint.AnalyzePython(data) {
 			ast = append(ast, Finding{
 				RuleID: r.RuleID, Name: r.Name, Severity: rules.High, CWE: r.CWE,
 				Path: path, Line: r.Line, Code: r.Code, Fix: r.Fix, Tier: "ast",
 			})
-			astLines[r.Line] = true
+			if astCWEs[r.Line] == nil {
+				astCWEs[r.Line] = map[string]bool{}
+			}
+			astCWEs[r.Line][r.CWE] = true
 		}
-		// AST wins on duplicate lines (it carries provenance).
+		// AST wins on same-line duplicates of the SAME vuln class (it carries
+		// provenance). A regex finding of another CWE on that line survives.
 		kept := findings[:0]
 		for _, fdx := range findings {
-			if !astLines[fdx.Line] {
+			if !astCWEs[fdx.Line][fdx.CWE] {
 				kept = append(kept, fdx)
 			}
 		}
@@ -224,19 +228,21 @@ func ScanFile(path string) []Finding {
 // fileRef scans one file's lines against the rules for its extension.
 type fileRef struct{ path string }
 
-func (fr *fileRef) scanLines(lines []NumberedLine) []Finding {
+// suppressPyRegex turns off Python line-rules VG-003/004/007 — only valid when
+// the AST tier will also run on the same content (full-file scans). Diff mode
+// must pass false, or Python sink findings are dropped with no AST backstop.
+func (fr *fileRef) scanLines(lines []NumberedLine, suppressPyRegex bool) []Finding {
 	ext := filepath.Ext(fr.path)
 	applicable := rules.ForExt(ext)
 	if len(applicable) == 0 {
 		return nil
 	}
-	suppressAST := ext == ".py"
 
 	var out []Finding
 	for _, ln := range lines {
 		for i := range applicable {
 			r := &applicable[i]
-			if suppressAST && pyRegexSuppressed[r.ID] {
+			if suppressPyRegex && pyRegexSuppressed[r.ID] {
 				continue
 			}
 			matches := r.Pattern.FindStringSubmatch(ln.Text)

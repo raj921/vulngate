@@ -72,5 +72,5 @@ func ScanNumberedLines(path string, lines []NumberedLine) []Finding {
 		return nil
 	}
 	file := &fileRef{path: path}
-	return file.scanLines(lines)
+	return file.scanLines(lines, false) // AST never runs on diffs: keep all regex rules
 }

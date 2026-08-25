@@ -10,6 +10,9 @@ import (
 	"github.com/raj921/vulngate/internal/scan"
 )
 
+// Version is the single version string shared by JSON and SARIF reports.
+const Version = "0.3.1"
+
 // Document is the machine-readable (JSON) report.
 type Document struct {
 	Tool     string         `json:"tool"`
@@ -48,7 +51,7 @@ func JSON(findings []scan.Finding) ([]byte, error) {
 	}
 	doc := Document{
 		Tool:     "vulngate",
-		Version:  "0.1.0",
+		Version:  Version,
 		Findings: findings,
 		Counts:   CountBySeverity(findings),
 		Verdict:  Verdict(findings),
