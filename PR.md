@@ -2,17 +2,17 @@
 
 ## What's broken
 
-**1. `diff` mode silently drops Python sink findings.**
+1. `diff` mode silently drops Python sink findings.
 `scanLines` suppresses the Python line-rules (SSRF, command injection,
 deserialization) on the assumption that the tree-sitter taint tier re-covers
-them. True for full-file scans — but the AST tier never runs on diffs (it
+them. That holds for full-file scans, but the AST tier never runs on diffs (it
 needs whole-file context). So a PR adding `pickle.loads(request.data)` passed
 the gate completely clean. That's the exact class of bug this tool exists to
 catch.
 
-**2. AST dedupe keys on line number only.**
+2. AST dedupe keys on line number only.
 When an AST finding lands on a line, every regex finding on that line is
-discarded — even for a different vulnerability class.
+discarded, even when it reports a different vulnerability class.
 `password = "hunter2prod"; eval(request.data)` lost the credential finding
 because the eval finding claimed the whole line.
 
