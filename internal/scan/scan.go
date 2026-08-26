@@ -252,11 +252,12 @@ func (fr *fileRef) scanLines(lines []NumberedLine, suppressPyRegex bool) []Findi
 			if r.SafeWord != nil && r.SafeWord.MatchString(ln.Text) {
 				continue
 			}
+			if r.SelfNamed && len(matches) > 2 &&
+				rules.NormName(matches[1]) == rules.NormName(matches[len(matches)-1]) {
+				continue // a constant naming itself, e.g. RESET_PASSWORD = "reset_password"
+			}
 			if r.EntropyGate > 0 {
-				val := matches[0]
-				if len(matches) > 1 {
-					val = matches[1]
-				}
+				val := matches[len(matches)-1]
 				if rules.Shannon(val) < r.EntropyGate {
 					continue
 				}

@@ -125,8 +125,13 @@ func AnalyzePython(src []byte) []Result {
 			if !s.match(fnText) {
 				continue
 			}
-			if s.class.RuleID == "VG-T03" && isParameterizedQuery(args, src) {
-				continue // execute("... WHERE id = ?", (uid,)) — safe shape
+			if s.class.RuleID == "VG-T03" {
+				if isParameterizedQuery(args, src) {
+					continue // execute("... WHERE id = ?", (uid,)) — safe shape
+				}
+				if first := args.NamedChild(0); first != nil && first.Kind() == "call" {
+					continue // execute(db.select(...)) — ORM builder, parameterized by construction
+				}
 			}
 			if !containsTainted(args, src, tainted) && !isSource(args, src) {
 				continue

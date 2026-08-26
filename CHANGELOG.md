@@ -2,6 +2,21 @@
 
 All notable changes and fixes to VulnGate, newest first.
 
+## [0.4] Field-test driven fixes (2026-08-25)
+
+Scanned unfamiliar production repos (flaskbb, httpie, express, a live FastAPI app)
+and hand-verified every finding; each false positive produced a fix.
+
+- VG-T03: `.execute(db.select(...))` ORM builders are no longer treated as SQL
+  sinks (first-argument shape check, 3 flaskbb false positives removed).
+- VG-009 split: TLS `verify=False` is now VG-011 (CWE-295), not a JWT finding.
+- New rule VG-010, permissive CORS wildcards (CWE-942); found in the wild on a
+  real FastAPI app.
+- VG-001 self-naming suppression: constants that name themselves
+  (`RESET_PASSWORD = "reset_password"`) are labels, not credentials.
+- Six regression tests total; corpus F1 unchanged at 1.00.
+- Full matrix and hand-checked verdicts: `bench/BENCH.md` field test section.
+
 ## [Unreleased] Modern Go 1.24 pass
 
 Modernized to current stdlib idioms. Verified behavior-preserving: corpus

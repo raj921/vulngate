@@ -69,7 +69,31 @@ entropy gate kept every corpus TP).
 | CI-native | exit code 1, SARIF for code scanning | needs schema-constraining + orchestration |
 | Minified/vendor handling | scans today (FPs noted, Phase 3 filter) | can't ingest >context files |
 
-## 4. Known false-positive classes (found by this bench) → Phase 3 work items
+## 4. Field test (v0.4): unfamiliar production repos, unlabeled verdicts
+
+Scanning real code nobody prepared, then hand-checking every finding. This is the
+loop that turned the tool into a real app: each false positive below produced a fix.
+
+| Repo | Findings | Verdict | Hand-checked truth |
+|---|---|---|---|
+| datathon (my own FastAPI app) | 1 | REVIEW | VG-010 CORS wildcard at backend/main.py:30. Correct, actionable MEDIUM. App is otherwise clean: env secrets, secrets.compare_digest on OAuth state |
+| express (JS framework) | 0 | PASS | Zero false positives on a clean production framework |
+| pallets/flask | 3 | REVIEW | 59 test files skipped; remaining hits are docstring config and a context-safe sha1 |
+| flaskbb (production forum) | 4 | BLOCK | 3x innerHTML with user-content previews (credible MEDIUM XSS-review flags) + WTF_CSRF default secret shipped in default config (legit catch: predictable signing key across every default install) |
+| httpie (HTTP CLI) | 2 | REVIEW | requests.get(..., verify=False) in the update checker. True MITM-class finding, correctly relabeled CWE-295 after this round (it was mislabeled CWE-347 before) |
+
+### Tool fixes driven by this field test
+
+1. VG-T03 no longer treats `.execute(db.select(...))` ORM builders as sinks
+   (flaskbb produced 3 of these; AST checks the first argument's shape now).
+2. TLS `verify=False` split into its own rule, VG-011, CWE-295
+   (it was masked under the JWT rule, CWE-347).
+3. New rule VG-010, permissive CORS wildcards (CWE-942), from scanning my own app.
+4. VG-001 self-naming suppression: `RESET_PASSWORD = "reset_password"` is a
+   label constant, not a credential (name-normalized comparison).
+5. Regression tests for all of the above; seeded corpus F1 unchanged at 1.00.
+
+## 5. Known false-positive classes (found by this bench) → Phase 3 work items
 
 1. Minified / vendored JS (Closure-compiled `loader.js`), skip by line-length + path heuristics.
 2. Tests / examples / docs paths (`tests/`, `examples/`), default scope exclusions.

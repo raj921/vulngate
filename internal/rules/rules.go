@@ -9,7 +9,21 @@ package rules
 import (
 	"math"
 	"regexp"
+	"strings"
+	"unicode"
 )
+
+// NormName lowercases s and strips non-alphanumerics. Used to tell
+// self-naming constants (RESET_PASSWORD = "reset_password") from real secrets.
+func NormName(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			b.WriteRune(unicode.ToLower(r))
+		}
+	}
+	return b.String()
+}
 
 // Shannon returns the Shannon entropy (bits/char) of s — gitleaks-style gate
 // that separates real credentials (high entropy) from dummies like "password".
@@ -48,12 +62,15 @@ type Rule struct {
 	CWE      string
 	Pattern  *regexp.Regexp
 	SafeWord *regexp.Regexp // suppresses the finding when it matches the same line
-	// EntropyGate, when > 0, requires the first capture group's Shannon
+	// EntropyGate, when > 0, requires the LAST capture group's Shannon
 	// entropy to exceed the threshold (kills dummy-credential FPs).
 	EntropyGate float64
-	Fix         string
-	Exts        []string // file extensions this rule applies to, e.g. []string{".py"}
-	matchExts   map[string]bool
+	// SelfNamed suppresses the finding when capture group 1 (the variable
+	// name) normalize-equals the last group (the value).
+	SelfNamed bool
+	Fix       string
+	Exts      []string // file extensions this rule applies to, e.g. []string{".py"}
+	matchExts map[string]bool
 }
 
 // webExts covers the languages coding agents most often generate.
@@ -65,9 +82,12 @@ var jsExts = []string{".js", ".ts", ".jsx", ".tsx"}
 var All = []Rule{
 	{
 		ID: "VG-001", Name: "Hardcoded credential", Severity: High, CWE: "CWE-798",
-		Pattern:     regexp.MustCompile(`(?i)(?:api[_-]?key|secret|password|passwd|token)\s*=\s*["']([^"'\s]{8,})["']`),
+		// Groups: 1 = variable name, 2 = value. A constant naming itself
+		// (RESET_PASSWORD = "reset_password") is a label, not a credential.
+		Pattern:     regexp.MustCompile(`(?i)(\w*(?:api[_-]?key|secret|password|passwd|token|auth)\w*)\s*=\s*["']([^"'\s]{8,})["']`),
 		SafeWord:    regexp.MustCompile(`os\.environ|getenv|process\.env|example|placeholder|changeme|dummy|your[_-]`),
 		EntropyGate: 3.0,
+		SelfNamed:   true,
 		Fix:         "Load from environment (os.environ['KEY']). Never commit secrets.",
 		Exts:        webExts,
 	},
@@ -118,8 +138,21 @@ var All = []Rule{
 	},
 	{
 		ID: "VG-009", Name: "JWT signature check disabled", Severity: High, CWE: "CWE-347",
-		Pattern: regexp.MustCompile(`(?i)verify[_a-z]*"?\s*[:=]\s*false|algorithms?\s*[=:]\s*\[?\s*["']none["']`),
-		Fix:     "Always verify the JWT signature; reject alg=none.",
+		Pattern:  regexp.MustCompile(`(?i)algorithms?\s*[=:]\s*\[?\s*["']none["']|verify_signature"?\s*:\s*False`),
+		SafeWord: nil,
+		Fix:      "Always verify the JWT signature; reject alg=none.",
+		Exts:     webExts,
+	},
+	{
+		ID: "VG-010", Name: "Permissive CORS (wildcard origin)", Severity: Medium, CWE: "CWE-942",
+		Pattern: regexp.MustCompile(`(?i)(Access-Control-Allow-Origin["']?\s*[:=,]\s*["']\*|allow_origins\s*=\s*\[\s*["']\*["'])`),
+		Fix:     "Restrict allow_origins to an explicit list of your frontend hosts via config.",
+		Exts:    webExts,
+	},
+	{
+		ID: "VG-011", Name: "TLS certificate verification disabled", Severity: Medium, CWE: "CWE-295",
+		Pattern: regexp.MustCompile(`verify\s*=\s*False|verify\s*:\s*false`),
+		Fix:     "Never set verify=False on outbound HTTPS; pass the CA bundle instead.",
 		Exts:    webExts,
 	},
 }
