@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #fffdf7; width: 1200px; height: 700px; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="cv" width="1200" height="700"></canvas>
+<script src="https://unpkg.com/roughjs@4.6.6/bundled/rough.js"></script>
+<script>
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const rc = rough.canvas(cv);
+const W = t => ctx.fillText(t, 0, 0);
+function text(x, y, str, size, color, align) {
+  ctx.font = size + "px Caveat, cursive";
+  ctx.fillStyle = color || "#1e293b";
+  ctx.textAlign = align || "left";
+  ctx.fillText(str, x, y);
+}
+
+// background
+ctx.fillStyle = "#fffdf7";
+ctx.fillRect(0, 0, 1200, 700);
+
+// title + subtitle
+text(56, 74, "VulnGate", 64, "#1e293b");
+text(58, 118, "the security gate for AI-agent-written code", 33, "#64748b");
+
+// input: PR diff / repo
+rc.rectangle(50, 280, 220, 130, { fill: "#e0e7ff", fillStyle: "solid", stroke: "#4338ca", strokeWidth: 2.5, roughness: 2.2 });
+text(84, 332, "PR diff", 40, "#4338ca");
+text(70, 376, "repo folder", 34, "#4338ca");
+
+// arrow input -> cli
+rc.line(278, 345, 368, 345, { strokeWidth: 3, stroke: "#334155", roughness: 1.6 });
+rc.polygon([[360, 330], [390, 345], [360, 360]], { fill: "#334155", fillStyle: "solid", roughness: 1.4 });
+
+// big CLI container
+rc.rectangle(370, 190, 520, 370, { fill: "#dbeafe", fillStyle: "hachure", fillWeight: 2, hachureGap: 6, stroke: "#1d4ed8", strokeWidth: 3, roughness: 2.4 });
+text(520, 234, "vulngate (Go binary)", 40, "#1d4ed8");
+
+// Tier 1
+rc.rectangle(402, 268, 456, 108, { fill: "#fef3c7", fillStyle: "cross-hatch", fillWeight: 1.6, stroke: "#d97706", strokeWidth: 2.5, roughness: 2.0 });
+text(428, 306, "Tier 1: regex", 36, "#b45309");
+text(428, 350, "9 CWE rules · safeWord · entropy", 28, "#92400e");
+
+// Tier 2
+rc.rectangle(402, 402, 456, 108, { fill: "#dcfce7", fillStyle: "zigzag", fillWeight: 1.5, stroke: "#16a34a", strokeWidth: 2.5, roughness: 2.0 });
+text(428, 440, "Tier 2: AST taint", 36, "#15803d");
+text(428, 484, "tree-sitter · prove source → sink", 28, "#166534");
+
+// outputs: three verdict lanes
+rc.line(892, 322, 956, 232, { strokeWidth: 3, stroke: "#dc2626", roughness: 1.6 });
+rc.ellipse(1040, 200, 150, 96, { fill: "#fecaca", fillStyle: "solid", stroke: "#dc2626", strokeWidth: 3, roughness: 2.0 });
+text(980, 190, "BLOCK", 42, "#b91c1c");
+text(965, 232, "exit 1", 30, "#b91c1c");
+
+rc.line(892, 392, 956, 352, { strokeWidth: 3, stroke: "#d97706", roughness: 1.6 });
+rc.ellipse(1040, 352, 150, 96, { fill: "#fef08a", fillStyle: "solid", stroke: "#d97706", strokeWidth: 3, roughness: 2.0 });
+text(972, 342, "REVIEW", 40, "#92400e");
+text(970, 384, "exit 0", 28, "#92400e");
+
+rc.line(892, 468, 956, 500, { strokeWidth: 3, stroke: "#16a34a", roughness: 1.6 });
+rc.ellipse(1040, 524, 150, 96, { fill: "#bbf7d0", fillStyle: "solid", stroke: "#16a34a", strokeWidth: 3, roughness: 2.0 });
+text(988, 514, "PASS", 42, "#15803d");
+text(974, 556, "exit 0", 28, "#15803d");
+
+// footer notes
+text(56, 610, "48 ms · NodeGoat", 30, "#64748b");
+text(56, 650, "F1 1.00 seeded corpus · offline · SARIF + JSON", 30, "#64748b");
+text(760, 640, "any HIGH → merge mechanically blocked", 32, "#dc2626");
+</script>
+</body>
+</html>
