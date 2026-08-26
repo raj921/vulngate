@@ -45,6 +45,11 @@ that already do it well.
 
 ## 4. Architecture
 
+![Multi-Tier Detection Pipeline: Engine and file walker → Tier 1 fast scan (9 CWE regex rules, entropy gate, safeWord filter) → Tier 2 deep analysis (tree-sitter parse, AST construction, data-flow taint analysis, source-to-sink prover) → Decision Engine: BLOCK / REVIEW / PASS](docs/vulngate-pipeline.png)
+
+Editable source: [docs/vulngate-pipeline.excalidraw](docs/vulngate-pipeline.excalidraw)
+
+
 ```
 ┌────────────┐   walk    ┌──────────────┐  line scan   ┌──────────────┐
 │ repo / diff │ ───────▶ │ scanner pool  │ ───────────▶ │ rules engine  │
@@ -107,7 +112,8 @@ legacy-vendor
 
 ## 7. Status
 
-v0.3: AST taint tier, diff mode, SARIF, benchmark harness, precision hardening.
-Details in [CHANGELOG.md](CHANGELOG.md). The `demo/` folder holds intentionally
-vulnerable Python/JS; VulnGate blocks it (13 findings, 9 HIGH). Benchmark data and
-the known-false-positive list live in `bench/BENCH.md`.
+v0.5: two-tier engine (regex + tree-sitter AST taint), diff mode, SARIF, benchmark
+harness, precision hardening, field-test driven fixes, universal CLI. Full history
+in [CHANGELOG.md](CHANGELOG.md). The `demo/` folder holds intentionally vulnerable
+Python/JS; VulnGate blocks it (13 findings, 9 HIGH). Benchmarks, the known
+false-positive list, and the production-repo field matrix live in `bench/BENCH.md`.
