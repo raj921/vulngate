@@ -2,7 +2,7 @@
 
 The security gate for AI-agent-generated code.
 
-Autonomous coding agents (Factory Droid, Devin, Claude Code, Copilot Workspace) now
+Autonomous coding agents (Devin, Claude Code, Cursor, Copilot Workspace) now
 write and merge code at machine speed. The security review step did not get faster.
 VulnGate is the checkpoint: it runs on every agent-authored PR and decides
 BLOCK / REVIEW / PASS before anything merges.
@@ -11,14 +11,15 @@ BLOCK / REVIEW / PASS before anything merges.
 
 ## 1. Why this exists
 
-Factory's pitch is autonomy. Their platform docs list "Autonomy & Safety" as a pillar,
-but safety there means permissions: what the agent is allowed to touch. It says nothing
-about what the agent writes. Agent-generated code inherits every OWASP mistake at 100x
-throughput, and Factory's enterprise customers (Blackstone, Adyen, Klarna, EY, Nvidia)
-are exactly the organizations that cannot merge unaudited code.
+Every agent platform sells speed, and their guardrails answer a simpler question:
+what is the agent allowed to touch. Permissions, sandboxing, network egress. None of
+it answers the question that matters at merge time: is the code the agent wrote safe?
+Agent-generated code inherits every OWASP mistake at 100x throughput, and the teams
+adopting autonomous development fastest (regulated finance, payments, healthcare) are
+precisely the ones that cannot merge unaudited code.
 
-VulnGate fills that hole as a single static binary: drop it in CI, or wire it into the
-Droid harness as a pre-merge hook.
+VulnGate fills that hole as a single static binary: drop it in CI, or wire it into any
+agent harness as a pre-merge hook.
 
 ## 2. What already exists (verified Aug 2026)
 
@@ -39,7 +40,8 @@ used `(?!)` lookaheads and had to be redesigned as `pattern` + optional `safeWor
 Compose, don't reinvent. The scanning engine is a commodity (semgrep, gosec, and
 gitleaks prove that). The thing nobody ships is the gate: an opinionated single binary
 that reads a PR diff, returns exploit-focused findings and a verdict, needs zero config
-in CI, and plugs into the Droid harness's hooks. So VulnGate has its own small engine
+in CI, and plugs into any agent harness (hooks, pre-commit, or one line in a pipeline).
+So VulnGate has its own small engine
 (stdlib-only, with its limits documented) and leaves general-purpose SAST to the tools
 that already do it well.
 
@@ -81,7 +83,7 @@ Editable source: [docs/vulngate-pipeline.excalidraw](docs/vulngate-pipeline.exca
    parameterized-query suppression for VG-T03, Shannon entropy gate on secrets.
    Result: the flask clean-repo run went from 16 findings and a BLOCK verdict to
    3 findings and REVIEW, and NodeGoat is down to its 5 textbook vulnerabilities.
-   Next: JS/TS AST tier, per-finding confidence, Droid-harness hook.
+   Next: JS/TS AST tier, per-finding confidence, harness hooks.
 
 ## 6. Install and usage
 
