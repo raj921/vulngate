@@ -20,8 +20,12 @@ import (
 
 func usage() {
 	fmt.Fprintln(os.Stderr, `usage:
-  vulngate scan <path>        [--format=text|json|sarif]
+  vulngate scan <path>        [--format=text|json|sarif] [--include-tests]
   vulngate diff <patch-file>  [--format=text|json|sarif]
+  vulngate version
+
+Per-project excludes: put a .vulngateignore file (gitignore-style lines,
+matched as path substrings) at the scan root.
 
 exit 1 when HIGH findings exist (BLOCK), else 0.`)
 	os.Exit(2)
@@ -32,6 +36,10 @@ func main() {
 		usage()
 	}
 
+	if os.Args[1] == "version" {
+		fmt.Println("vulngate " + report.Version)
+		os.Exit(0)
+	}
 	fs := flag.NewFlagSet("vulngate", flag.ExitOnError)
 	format := fs.String("format", "text", "output format: text|json|sarif")
 	jsonAlias := fs.Bool("json", false, "shorthand for --format=json")
@@ -69,6 +77,7 @@ func main() {
 
 	switch os.Args[1] {
 	case "scan":
+		scan.LoadIgnore(target)
 		findings, err = scan.Scan(target)
 	case "diff":
 		findings, err = scanPatch(target)

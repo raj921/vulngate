@@ -24,6 +24,47 @@ var (
 	SkippedTests  atomic.Int64
 )
 
+// ignorePatterns holds .vulngateignore lines for the current scan root.
+var ignorePatterns atomic.Value // []string
+
+// LoadIgnore reads <root>/.vulngateignore (gitignore-style: one pattern per
+// line, # comments, substring match against slash-separated paths). Missing
+// file means no extra ignores. Capped at 1024 patterns.
+func LoadIgnore(root string) {
+	base := root
+	if info, err := os.Stat(root); err == nil && !info.IsDir() {
+		base = filepath.Dir(root)
+	}
+	var pats []string
+	if data, err := os.ReadFile(filepath.Join(base, ".vulngateignore")); err == nil {
+		for _, line := range strings.Split(string(data), "\n") {
+			line = strings.TrimSpace(line)
+			if line != "" && !strings.HasPrefix(line, "#") {
+				pats = append(pats, strings.Trim(line, "/"))
+			}
+		}
+	}
+	if len(pats) > 1024 {
+		pats = pats[:1024]
+	}
+	ignorePatterns.Store(pats)
+	// ponytail: substring-per-line matching; glob semantics would need a lib.
+}
+
+func isIgnored(path string) bool {
+	pats, _ := ignorePatterns.Load().([]string)
+	slashPath := filepath.ToSlash(path)
+	for _, p := range pats {
+		if p != "" && strings.Contains(slashPath, p) {
+			return true
+		}
+	}
+	return false
+}
+
+// Scannable decides whether a file path should be scanned.
+func Scannable(path string) bool { return rules.Scannable(filepath.Ext(path)) && !isIgnored(path) }
+
 var testPathSegs = map[string]bool{
 	"test": true, "tests": true, "testing": true, "testdata": true,
 	"fixtures": true, "examples": true, "example": true,
@@ -165,7 +206,7 @@ func collect(root string) ([]string, error) {
 			}
 			return nil
 		}
-		if rules.Scannable(filepath.Ext(path)) {
+		if Scannable(path) {
 			paths = append(paths, path)
 		}
 		return nil

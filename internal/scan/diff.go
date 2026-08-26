@@ -68,7 +68,7 @@ func hunkStart(header string) (int, error) {
 // context needed for provenance. CI should run the full scan for that.
 // Test/example/vendor paths respect the same scoping as full scans.
 func ScanNumberedLines(path string, lines []NumberedLine) []Finding {
-	if isVendorPath(path) || isTestLike(path) {
+	if isVendorPath(path) || isTestLike(path) || isIgnored(path) {
 		return nil
 	}
 	file := &fileRef{path: path}

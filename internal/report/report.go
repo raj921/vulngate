@@ -11,7 +11,7 @@ import (
 )
 
 // Version is the single version string shared by JSON and SARIF reports.
-const Version = "0.4.0"
+const Version = "0.5.0"
 
 // Document is the machine-readable (JSON) report.
 type Document struct {

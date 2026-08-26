@@ -69,6 +69,40 @@ func TestFieldTestRules(t *testing.T) {
 	}
 }
 
+// Regression: .vulngateignore at the scan root excludes matching paths
+// (universal-CLI per-project config).
+func TestVulngateIgnore(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, body string) string {
+		p := filepath.Join(dir, name)
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	write("app/main.py", "password = \"hunter2prod\"\n")
+	write("gen/g.py", "password = \"hunter2prod\"\n")
+	write(".vulngateignore", "# generated code is trusted\ngen/\n")
+
+	scan.LoadIgnore(dir)
+	got, err := scan.Scan(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !hasRule(got, "VG-001") {
+		t.Errorf("expected VG-001 from app/main.py: %v", got)
+	}
+	for _, f := range got {
+		if strings.Contains(f.Path, "gen/") {
+			t.Errorf("ignored path still scanned: %v", f)
+		}
+	}
+	scan.LoadIgnore("") // reset for other tests
+}
+
 // Regression: self-naming constants are not credentials (flaskbb field test),
 // while real keys still fire.
 func TestSelfNamingConstantNotCredential(t *testing.T) {

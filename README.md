@@ -78,15 +78,31 @@ that already do it well.
    3 findings and REVIEW, and NodeGoat is down to its 5 textbook vulnerabilities.
    Next: JS/TS AST tier, per-finding confidence, Droid-harness hook.
 
-## 6. Usage
+## 6. Install and usage
+
+Install once, use everywhere:
 
 ```bash
-go build -o vulngate ./cmd/vulngate
-./vulngate scan ./demo                  # human report
-./vulngate scan --format=json ./demo    # machine report
-./vulngate scan --format=sarif ./demo   # GitHub code scanning upload format
-./vulngate diff bench/demo.patch        # gate only PR-added lines
+git clone https://github.com/raj921/vulngate && cd vulngate
+make install        # builds and installs to ~/go/bin/vulngate
+# make sure ~/go/bin is on your PATH, then from any directory:
+vulngate scan /path/to/any/project
+vulngate scan . --format=json          # machine report
+vulngate scan . --format=sarif         # GitHub code scanning upload format
+vulngate diff pull-request.patch       # gate only PR-added lines
+vulngate scan . --include-tests        # also scan tests/examples
+vulngate version
 echo $?                                 # 1 when HIGH findings exist
+```
+
+Per-project config: drop a `.vulngateignore` at the repo root (gitignore-style, one
+pattern per line, `#` comments, substring match) to exclude extra paths:
+
+```
+# .vulngateignore
+gen/
+legacy-vendor
+# patterns are path-substring matches (not globs), so "gen/" matches any segment
 ```
 
 ## 7. Status

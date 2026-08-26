@@ -2,6 +2,16 @@
 
 All notable changes and fixes to VulnGate, newest first.
 
+## [0.5] Universal CLI (2026-08-26)
+
+- `make install` ships the single binary to `~/go/bin/vulngate`; `vulngate`
+  now runs from any directory against any project path.
+- `vulngate version` subcommand.
+- Per-project config: `.vulngateignore` (gitignore-style, path-substring
+  matching) at the scan root, honored by both `scan` and `diff`.
+- Makefile: build / install / test / bench / clean targets.
+- Regression test for ignore handling; seven tests total.
+
 ## [0.4] Field-test driven fixes (2026-08-25)
 
 Scanned unfamiliar production repos (flaskbb, httpie, express, a live FastAPI app)
