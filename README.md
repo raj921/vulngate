@@ -2,6 +2,34 @@
 
 The security gate for AI-agent-generated code.
 
+## Quick start
+
+**GitHub Action** (blocks PRs with HIGH findings):
+
+```yaml
+# .github/workflows/vulngate.yml
+on: pull_request
+permissions:
+  contents: read
+  pull-requests: read
+  security-events: write
+jobs:
+  vulngate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: raj921/vulngate@v1
+```
+
+**CLI:**
+
+```bash
+go install github.com/raj921/vulngate/cmd/vulngate@latest
+vulngate scan .
+```
+
+Or download a binary from [Releases](https://github.com/raj921/vulngate/releases).
+
 Autonomous coding agents (Devin, Claude Code, Cursor, Copilot Workspace) now
 write and merge code at machine speed. The security review step did not get faster.
 VulnGate is the checkpoint: it runs on every agent-authored PR and decides
@@ -66,7 +94,7 @@ Editable source: [docs/vulngate-pipeline.excalidraw](docs/vulngate-pipeline.exca
 
 - `vulngate scan <path>`: text report, exit 1 on any HIGH (CI-ready)
 - `vulngate scan <path> --json`: machine output for agents and dashboards
-- Severity floor flag, CWE on every finding, per-line suppressions (phase 2)
+- Severity floor flag, CWE on every finding
 
 ## 5. Phases
 
@@ -83,7 +111,7 @@ Editable source: [docs/vulngate-pipeline.excalidraw](docs/vulngate-pipeline.exca
    parameterized-query suppression for VG-T03, Shannon entropy gate on secrets.
    Result: the flask clean-repo run went from 16 findings and a BLOCK verdict to
    3 findings and REVIEW, and NodeGoat is down to its 5 textbook vulnerabilities.
-   Next: JS/TS AST tier, per-finding confidence, harness hooks.
+   Next: JS/TS AST tier, per-finding confidence, agent harness hooks.
 
 ## 6. Install and usage
 
