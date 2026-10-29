@@ -1,0 +1,73 @@
+name: VulnGate
+description: Security gate for AI-agent-generated code. Blocks PRs with HIGH findings.
+branding:
+  icon: shield
+  color: red
+
+inputs:
+  version:
+    description: Release tag to use, or "latest"
+    default: latest
+  mode:
+    description: "diff (only lines the PR adds) or scan (whole repo)"
+    default: diff
+  path:
+    description: Path to scan in scan mode
+    default: "."
+  upload-sarif:
+    description: Upload findings to GitHub code scanning
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Download vulngate
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        case "${RUNNER_OS}-${RUNNER_ARCH}" in
+          Linux-X64)   target=linux-amd64 ;;
+          Linux-ARM64) target=linux-arm64 ;;
+          macOS-ARM64) target=darwin-arm64 ;;
+          *) echo "Unsupported runner: ${RUNNER_OS}-${RUNNER_ARCH}"; exit 1 ;;
+        esac
+        tag="${{ inputs.version }}"
+        if [ "$tag" = "latest" ]; then
+          tag=$(gh release view --repo raj921/vulngate --json tagName -q .tagName)
+        fi
+        gh release download "$tag" --repo raj921/vulngate \
+          --pattern "vulngate-*-${target}.tar.gz" --dir "$RUNNER_TEMP"
+        tar -xzf "$RUNNER_TEMP"/vulngate-*-"${target}".tar.gz -C "$RUNNER_TEMP"
+        echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+
+    - name: Run vulngate
+      id: run
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+      run: |
+        set +e
+        if [ "${{ inputs.mode }}" = "diff" ] && [ -n "$PR_NUMBER" ]; then
+          gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" > "$RUNNER_TEMP/pr.diff"
+          vulngate diff "$RUNNER_TEMP/pr.diff"
+          code=$?
+          vulngate diff "$RUNNER_TEMP/pr.diff" --format=sarif > vulngate.sarif
+        else
+          vulngate scan "${{ inputs.path }}"
+          code=$?
+          vulngate scan "${{ inputs.path }}" --format=sarif > vulngate.sarif
+        fi
+        echo "exit-code=$code" >> "$GITHUB_OUTPUT"
+
+    - name: Upload SARIF
+      if: ${{ always() && inputs.upload-sarif == 'true' }}
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: vulngate.sarif
+        category: vulngate
+
+    - name: Gate
+      shell: bash
+      run: exit ${{ steps.run.outputs.exit-code }}
