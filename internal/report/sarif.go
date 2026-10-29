@@ -124,6 +124,9 @@ func SARIF(findings []scan.Finding) ([]byte, error) {
 			}}},
 		})
 	}
+	if driver.Rules == nil {
+		driver.Rules = []sarifRule{}
+	}
 	if log.Runs[0].Results == nil {
 		log.Runs[0].Results = []sarifResult{}
 	}
